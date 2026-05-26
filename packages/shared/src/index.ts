@@ -1,1 +1,3 @@
-export const SHARED_VERSION = '0.0.1'
+export { SHARED_VERSION } from './version'
+export * from './notification-event'
+export { prisma } from './prisma'

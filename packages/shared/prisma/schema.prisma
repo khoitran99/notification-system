@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id          BigInt   @id @default(autoincrement()) @map("user_id")
+  email       String   @unique
+  countryCode Int?     @map("country_code")
+  phoneNumber String?  @map("phone_number")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  devices  Device[]
+  settings NotificationSetting[]
+  logs     NotificationLog[]
+
+  @@map("user")
+}
+
+// ── Device ──────────────────────────────────────────────────────────────────
+
+model Device {
+  id             BigInt   @id @default(autoincrement())
+  deviceToken    String   @map("device_token")
+  userId         BigInt   @map("user_id")
+  lastLoggedInAt DateTime @map("last_logged_in_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("device")
+}
+
+// ── NotificationSetting ─────────────────────────────────────────────────────
+
+model NotificationSetting {
+  userId  BigInt  @map("user_id")
+  channel String  // 'ios' | 'android' | 'sms' | 'email'
+  optIn   Boolean @map("opt_in")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, channel])
+  @@map("notification_setting")
+}
+
+// ── NotificationLog ─────────────────────────────────────────────────────────
+
+model NotificationLog {
+  id        BigInt             @id @default(autoincrement())
+  eventId   String             @map("event_id")
+  userId    BigInt             @map("user_id")
+  channel   String
+  status    NotificationStatus
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([eventId])
+  @@map("notification_log")
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  delivered
+  error
+  clicked
+  unsubscribed
+}
