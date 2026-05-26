@@ -4,9 +4,65 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a greenfield implementation of a scalable notification system (based on ByteByteGo System Design Interview, Chapter 11). The system delivers **iOS push (APNs)**, **Android push (FCM)**, **SMS**, and **Email** notifications at scale: 10M push/day, 1M SMS/day, 5M email/day.
+A scalable notification system (ByteByteGo System Design Interview, Chapter 11) delivering **iOS push (APNs)**, **Android push (FCM)**, **SMS**, and **Email** at scale: 10M push/day, 1M SMS/day, 5M email/day.
 
-No build system, language, or framework has been chosen yet. When implementing, update this file with the actual commands.
+## Stack
+
+| Concern | Choice |
+|---|---|
+| Language | TypeScript / Node.js |
+| Repo | pnpm monorepo (`packages/shared`, `services/*`) |
+| API framework | Fastify (notification-server only) |
+| Message queue | RabbitMQ (one exchange + queue per channel) |
+| Database | PostgreSQL via Prisma |
+| Cache / rate limiting | Redis (sliding window counter) |
+| Auth | Static appKey/appSecret — validated against Redis cache, DB fallback |
+
+## Monorepo Structure
+
+```
+/
+├── packages/
+│   └── shared/               # NotificationEvent type, Prisma client, shared utils
+├── services/
+│   ├── notification-server/  # Fastify REST API — auth, validation, rate limiting, enqueue
+│   ├── worker-ios/           # Consumes ios_pn queue → APNs
+│   ├── worker-android/       # Consumes android_pn queue → FCM
+│   ├── worker-sms/           # Consumes sms queue → Twilio / Nexmo
+│   └── worker-email/         # Consumes email queue → Sendgrid / Mailchimp
+├── docker-compose.yml        # RabbitMQ + PostgreSQL + Redis for local dev
+├── package.json
+└── pnpm-workspace.yaml
+```
+
+## Local Development
+
+```bash
+# Start infrastructure (RabbitMQ, PostgreSQL, Redis)
+docker compose up -d
+
+# RabbitMQ management UI: http://localhost:15672
+# Install all workspace dependencies
+pnpm install
+
+# Run a single service in dev mode
+pnpm --filter notification-server dev
+pnpm --filter worker-ios dev
+
+# Run all services
+pnpm --filter './services/*' dev
+
+# Database migrations (run from packages/shared or the service that owns the schema)
+pnpm prisma migrate dev
+pnpm prisma migrate deploy   # production
+```
+
+## Key Cross-Cutting Rules
+
+- **`packages/shared`** owns the `NotificationEvent` type and the Prisma client. Services import from here — never redefine the event shape locally.
+- **Rate limiting** runs in the Notification Server before enqueue, using a Redis sliding window counter (Lua script for atomicity).
+- **Retry** is handled by RabbitMQ's dead-letter exchange (DLX) — workers reject (not ack) failed messages; the broker handles requeue with TTL-based backoff. Workers do not implement their own retry loops.
+- **Deduplication** — workers check `event_id` against the Notification Log before calling the third-party service. If found, ack and discard.
 
 ---
 
