@@ -8,9 +8,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@notification/shared": "workspace:*"
+    "@notification/shared": "workspace:*",
+    "@sendgrid/mail": "^8.1.6"
   },
   "devDependencies": {
+    "@types/node": "^25.9.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
   }
 }
