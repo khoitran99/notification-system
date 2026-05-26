@@ -74,3 +74,13 @@ enum NotificationStatus {
   clicked
   unsubscribed
 }
+
+// ── AppCredential ────────────────────────────────────────────────────────────
+
+model AppCredential {
+  appKey       String   @id @map("app_key")
+  hashedSecret String   @map("hashed_secret")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("app_credential")
+}

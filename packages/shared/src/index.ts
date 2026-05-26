@@ -1,6 +1,7 @@
 export { SHARED_VERSION } from './version'
 export * from './notification-event'
 export { prisma } from './prisma'
+export { PrismaClient } from './generated/prisma'
 export { setupQueues, CHANNELS, ALERT_QUEUE, exchangeFor } from './setup-queues'
 export type { QueueChannel } from './setup-queues'
 export { createQueuePublisher } from './queue-publisher'
