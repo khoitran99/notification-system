@@ -18,6 +18,31 @@ A scalable notification system (ByteByteGo System Design Interview, Chapter 11) 
 | Cache / rate limiting | Redis (sliding window counter) |
 | Auth | Static appKey/appSecret — validated against Redis cache, DB fallback |
 
+## Commands
+
+```bash
+# Requires Node 18+ — run: nvm use 18
+pnpm install          # install all workspace dependencies
+pnpm test             # run all tests
+pnpm test:watch       # watch mode
+pnpm -r typecheck     # tsc --noEmit across all packages
+
+# Run a single service in dev mode
+pnpm --filter notification-server dev
+pnpm --filter worker-ios dev
+
+# Run all services in parallel
+pnpm --filter './services/*' dev
+
+# Infrastructure (RabbitMQ :5672/:15672, PostgreSQL :5432, Redis :6379)
+docker compose up -d
+# RabbitMQ management UI: http://localhost:15672  (guest / guest)
+
+# Database migrations
+pnpm prisma migrate dev       # development
+pnpm prisma migrate deploy    # production
+```
+
 ## Monorepo Structure
 
 ```
